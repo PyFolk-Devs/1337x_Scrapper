@@ -74,7 +74,7 @@ def get_magnet_link(detail_url):
 
 # Main
 print("+--------------------------------------+")
-print("|     Welcome to 1337x Scrapper      |")
+print("|     Welcome to 1337x Scrapper        |")
 print("+--------------------------------------+\n")
 
 query = input("Enter Torrent Name to be searched: ")
