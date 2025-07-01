@@ -2,7 +2,6 @@ import cloudscraper
 from bs4 import BeautifulSoup
 import pyperclip
 import platform
-import sys
 
 BASE_URL = "https://1337x.gameszonehub.workers.dev"  # Mirror site
 
@@ -11,7 +10,7 @@ def beep():
         import winsound
         winsound.Beep(1000, 200)
     else:
-        print('\a')  # ASCII bell
+        print('\a')  # ASCII bell for Linux/macOS
 
 def get_search_results(query):
     query = query.replace(" ", "+")
@@ -22,16 +21,16 @@ def get_search_results(query):
     soup = BeautifulSoup(response.text, 'html.parser')
 
     if soup.title and "Just a moment" in soup.title.text:
-        print("\n⚠️ Cloudflare still blocking even with cloudscraper.")
+        print("⚠️ Cloudflare still blocking even with cloudscraper.")
         return []
 
     table = soup.find('table', class_='table-list')
     if not table:
-        print("\n❌ Table with class 'table-list' not found.")
+        print("❌ Table with class 'table-list' not found.")
         return []
 
     results = []
-    rows = table.find_all('tr')[1:]
+    rows = table.find_all('tr')[1:]  # Skip header row
     for row in rows:
         try:
             title_td = row.find('td', class_='coll-1 name')
@@ -43,7 +42,7 @@ def get_search_results(query):
             seeds = row.find('td', class_='coll-2 seeds').text.strip()
             leeches = row.find('td', class_='coll-3 leeches').text.strip()
             size_td = row.find('td', class_=lambda c: c and 'coll-4' in c and 'size' in c)
-            size = size_td.find(text=True, recursive=False).strip() if size_td else "?"
+            size = size_td.get_text(strip=True) if size_td else "?"
 
             uploader_td = row.find('td', class_='coll-5')
             uploader = uploader_td.text.strip() if uploader_td else "?"
@@ -73,38 +72,30 @@ def get_magnet_link(detail_url):
     magnet = soup.find('a', href=lambda x: x and x.startswith('magnet:?'))
     return magnet['href'] if magnet else None
 
+# Main
+print("+--------------------------------------+")
+print("|     Welcome to 1337x Scrapper      |")
+print("+--------------------------------------+\n")
 
-def main():
-    print("+--------------------------------------+\n" 
-          "|     Welcome to 1337x Downloader      |\n" 
-          "+--------------------------------------+\n")
+query = input("Enter Torrent Name to be searched: ")
+results = get_search_results(query)
 
-    query = input("Enter Torrent Name to be searched: ")
-    results = get_search_results(query)
+if not results:
+    exit("❌ No torrents found or page was blocked.")
 
-    if not results:
-        sys.exit("\n❌ No torrents found or page was blocked.")
+for idx, result in enumerate(results):
+    print(f"{idx+1}. {result['title']}")
+    print(f"   Size: {result['size']} | Seeds: {result['seeds']} | Leeches: {result['leeches']}")
+    print(f"   Uploader: {result['uploader']} | Uploaded on: {result['upload_date']}\n")
 
-    for idx, result in enumerate(results):
-        print(f"{idx+1}. {result['title']}")
-        print(f"   Size: {result['size']} | Seeds: {result['seeds']} | Leeches: {result['leeches']}")
-        print(f"   Uploader: {result['uploader']} | Uploaded on: {result['upload_date']}\n")
-
-    try:
-        choice = int(input("Enter the number to copy magnet link: "))
-        if 1 <= choice <= len(results):
-            magnet_link = get_magnet_link(results[choice - 1]['link'])
-            if magnet_link:
-                pyperclip.copy(magnet_link)
-                beep()
-                print("\n✅ Magnet link copied to clipboard.")
-            else:
-                print("\n❌ Magnet link not found.")
-        else:
-            print("\n❌ Invalid choice.")
-    except ValueError:
-        print("\n❌ Please enter a valid number.")
-
-
-if __name__ == '__main__':
-    main()
+choice = int(input("Enter the number to copy magnet link: "))
+if 1 <= choice <= len(results):
+    magnet_link = get_magnet_link(results[choice - 1]['link'])
+    if magnet_link:
+        pyperclip.copy(magnet_link)
+        beep()
+        print("\n✅ Magnet link copied to clipboard.")
+    else:
+        print("❌ Magnet link not found.")
+else:
+    print("❌ Invalid choice.")
